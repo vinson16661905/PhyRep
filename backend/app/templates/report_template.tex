@@ -1,0 +1,168 @@
+% !TeX program = xelatex
+\documentclass[11pt,a4paper]{ctexart}
+\usepackage{amsmath,amssymb}
+\usepackage{siunitx}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{geometry}
+\usepackage{float}
+\usepackage{hyperref}
+
+\geometry{left=25mm,right=25mm,top=20mm,bottom=20mm}
+
+\title{ {{ meta.experiment | latex_escape }} }
+\author{ {{ meta.student | latex_escape }}\quad {{ meta.student_id | latex_escape }} }
+\date{ {{ meta.date | latex_escape }} }
+
+\begin{document}
+
+\maketitle
+
+% 实验室/课程信息 (可选，作为非标题部分显示)
+\vspace{1em}
+
+% 表格渲染宏
+{% macro render_table(block) -%}
+\begin{table}[H]
+    \centering
+    {% if block.caption %}\caption{ {{ block.caption | latex_escape }} }{% endif %}
+    {% set cols = 'c' * (block.headers|length) %}
+    \begin{tabular}{@{}{{ cols }}@{}}
+        \toprule
+        {%- for header in block.headers -%}
+            {{ header | latex_escape }}{% if not loop.last %} & {% endif %}
+        {%- endfor %} \\
+        \midrule
+        {%- for row in block.rows -%}
+            {%- for item in row -%}
+                {% if item is string %}{{ item | latex_escape }}{% else %}{{ '{:.4g}'.format(item) }}{% endif %}{% if not loop.last %} & {% endif %}
+            {%- endfor %} \\
+        {%- endfor %}
+        \bottomrule
+    \end{tabular}
+\end{table}
+{%- endmacro %}
+
+% 主内容循环
+{% for block in blocks %}
+    {% if block.type == 'text' %}
+        {% if block.heading %}\section{ {{ block.heading | latex_escape }} }{% endif %}
+        {{ block.content | latex_lines }}
+        
+    {% elif block.type == 'table' %}
+        {{ render_table(block) }}
+
+        {% if block.analysis_results %}
+            {% for result in block.analysis_results %}
+                {% if result.error %}
+                    \paragraph{分析错误} {{ result.error | latex_escape }}
+                {% else %}
+                    {% if result.analysis_type == 'uncertainty_single_set' %}
+                        \paragraph{单变量不确定度分析}
+                        \noindent 仪器允差 $e = {{ '{:.6g}'.format(result.tolerance) }}\,{{ result.units }}$
+                        
+                        \[
+                        \bar{x} = {{ '{:.6g}'.format(result.mean) }}\,{{ result.units }},\quad n = {{ result.n }}
+                        \]
+                        
+                        \[
+                        \sigma_A = \frac{S}{\sqrt{n}} = {{ '{:.6g}'.format(result.u_a) }}\,{{ result.units }},\qquad 
+                        \sigma_B = \frac{e}{\sqrt{3}} = {{ '{:.6g}'.format(result.u_b) }}\,{{ result.units }}
+                        \]
+                        
+                        \[
+                        \sigma = \sqrt{\sigma_A^2 + \sigma_B^2} = {{ '{:.6g}'.format(result.u_combined) }}\,{{ result.units }}
+                        \]
+                        
+                        \[
+                        x = \bar{x} \pm \sigma = ({{ '{:.6g}'.format(result.mean) }} \pm {{ '{:.6g}'.format(result.u_combined) }})\,{{ result.units }}
+                        \]
+                    {% else %}
+                        \paragraph{分析结果}
+                        {{ result.summary | latex_escape }}\\
+                        \begin{align*}
+                            R &= {{ '{:.6g}'.format(result.result_value) }}{% if result.units %}\,{{ result.units }}{% endif %} \\
+                            {% if result.result_uncertainty is not none %}
+                            \sigma_R &= {{ '{:.2g}'.format(result.result_uncertainty) }}{% if result.units %}\,{{ result.units }}{% endif %} \\
+                            {% endif %}
+                        \end{align*}
+                        {% if result.details %}
+                        \begin{table}[H]
+                            \centering
+                            \caption{计算详情}
+                            \begin{tabular}{@{}ll@{}}
+                                \toprule
+                                参数 & 数值 \\
+                                \midrule
+                                {%- for key, value in result.details.items() -%}
+                                    {%- if value is mapping -%}
+                                        {%- for inner_key, inner_value in value.items() -%}
+                                            {{ key | latex_escape }}~({{ inner_key | latex_escape }}) & {{ inner_value | latex_escape }} \\ 
+                                        {%- endfor -%}
+                                    {%- else -%}
+                                        {{ key | latex_escape }} & {{ value | latex_escape }} \\
+                                    {%- endif -%}
+                                {%- endfor -%}
+                                \bottomrule
+                            \end{tabular}
+                        \end{table}
+                        {% endif %}
+                    {% endif %}
+                {% endif %}
+                \vspace{1em}
+            {% endfor %}
+        {% endif %}
+        
+    {% elif block.type == 'image' %}
+        \begin{figure}[H]
+            \centering
+            \includegraphics[width={{ block.width }}]{{ '{' }}{{ block.url | trim }}{{ '}' }}
+            {% if block.caption %}\caption{ {{ block.caption | latex_escape }} }{% endif %}
+        \end{figure}
+        
+    {% elif block.type == 'formula' %}
+        {% if block.caption %}\paragraph{ {{ block.caption | latex_escape }} }{% endif %}
+        \[
+            {{ block.latex }}
+        \]
+        
+    {% elif block.type == 'calculation' %}
+        \subsection{ {{ block.label | latex_escape }} }
+        
+        {{ block.summary | latex_escape }}\\
+        \begin{align*}
+            R &= {{ '{:.6g}'.format(block.result_value) }}{% if block.units %}\,{{ block.units }}{% endif %} \\
+            {% if block.result_uncertainty is not none %}
+            \sigma_R &= {{ '{:.2g}'.format(block.result_uncertainty) }}{% if block.units %}\,{{ block.units }}{% endif %} \\
+            {% endif %}
+        \end{align*}
+        {% if block.details %}
+        \begin{table}[H]
+            \centering
+            \caption{计算详情}
+            \begin{tabular}{@{}ll@{}}
+                \toprule
+                参数 & 数值 \\
+                \midrule
+                {%- for key, value in block.details.items() -%}
+                    {%- if value is mapping -%}
+                        {%- for inner_key, inner_value in value.items() -%}
+                            {{ key | latex_escape }}~({{ inner_key | latex_escape }}) & {{ inner_value | latex_escape }} \\ 
+                        {%- endfor -%}
+                    {%- else -%}
+                        {{ key | latex_escape }} & {{ value | latex_escape }} \\
+                    {%- endif -%}
+                {%- endfor -%}
+                \bottomrule
+            \end{tabular}
+        \end{table}
+        {% endif %}
+
+        {% if block.notes %}\paragraph{备注} {{ block.notes | latex_lines }}{% endif %}
+    {% endif %}
+
+\vspace{1em}
+{% endfor %}
+
+\end{document}
