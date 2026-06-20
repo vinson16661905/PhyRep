@@ -24,7 +24,13 @@ PhyRep 是一个帮助学生编写普物实验报告的全栈工具。
   - 一般传播律不确定度
   - 对数法不确定度
 - 导出 LaTeX 源码并复制到剪贴板
-- 内置不确定度计算器
+- 内置不确定度计算器（浮窗形式，在右下角打开）
+
+![20260620072623](https://raw.githubusercontent.com/vinson16661905/PicGo/main/cs101/20260620072623.png)
+
+![20260620072846](https://raw.githubusercontent.com/vinson16661905/PicGo/main/cs101/20260620072846.png)
+
+![20260620080611](https://raw.githubusercontent.com/vinson16661905/PicGo/main/cs101/20260620080611.png)
 
 ## 项目结构
 

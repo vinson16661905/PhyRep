@@ -10,3 +10,7 @@ export const requestTex = async (payload) => {
     const { data } = await apiClient.post("/generate-tex", payload);
     return data;
 };
+export const calculateUncertainty = async (payload) => {
+    const { data } = await apiClient.post("/calculate/uncertainty", payload);
+    return { value: data.result_value, uncertainty: data.result_uncertainty };
+};
